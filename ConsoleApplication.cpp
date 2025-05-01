@@ -2,70 +2,132 @@
 //
 
 #include "BowlingGame.h"
+#include <algorithm>
+#include <string>
 
 using namespace std;
+
+uint16_t GetNumberAsInput(std::string printBeforeInputAcceptance)
+{
+    char buff[3];
+    uint16_t number = 0;
+
+    while (true)
+    {
+        std::cout << printBeforeInputAcceptance;
+        std::cin.clear();
+        std::cin.getline(buff, 3);
+        bool validEntry = true;
+
+        validEntry = std::all_of(std::begin(buff), std::begin(buff) + 2, [](char ch) {
+            return ((ch >= 0x30) && (ch <= 0x39) || (0x00 == ch));
+            });
+
+        number = std::strtoul(buff, nullptr, 10);
+
+        if ((!validEntry) || std::cin.fail())
+        {
+            std::cin.clear();
+            std::cout << "Invalid inputs ..." << std::endl;
+        }
+        else
+        {
+            break;
+        }
+    }
+    return number;
+}
 
 int main()
 {
     std::cout << "Welcome to the Bowling Game!\n";
     BowlingGame game;
 
-    for (uint16_t currFrameIndex = 0; currFrameIndex < n_numberOfFrames; currFrameIndex++)
+    char buff[3];
+    uint16_t numberOfPlayers = 0;
+
+    try
     {
-        uint16_t tryIndex = 0;
-        while (true)
+        numberOfPlayers = GetNumberAsInput("Enter number of players : ");
+
+        game.SetNumberOfPlayers(numberOfPlayers);
+        for (uint16_t currPlayerIndex = 0; currPlayerIndex < numberOfPlayers; currPlayerIndex++)
         {
-            tryIndex++;
-            uint16_t numberOfPinsKnockedDown = 0;
-            while (true)
-            {
-                std::cout << "Bowl and enter number of pins knowed down for this try of frame " << currFrameIndex + 1 << " : ";
-                std::cin >> numberOfPinsKnockedDown;
+            std::string name;
+            std::cout << "Enter player name : ";
+            std::cin >> name;
+            game.SetPlayerName(currPlayerIndex, name);
+        }
 
-                if (game.isValidInput(currFrameIndex, tryIndex, numberOfPinsKnockedDown))
-                    break;
-                else
-                {
-                    std::cout << "Invalid inputs for this try of frame " << currFrameIndex + 1 << std::endl;
-                }
-            }
-            if (numberOfPinsKnockedDown == n_numberOfPins)
-            {
-                game.UpdateFrameScoreAfterATry(currFrameIndex, tryIndex, numberOfPinsKnockedDown);
-                break;
-            }
-            else
-            {
-                game.UpdateFrameScoreAfterATry(currFrameIndex, tryIndex, numberOfPinsKnockedDown);
-            }
+        game.DisplayPlayers();
 
-            if ((currFrameIndex < (n_numberOfFrames - 1)) && (tryIndex == 2))
-                break;
-            else if (currFrameIndex == (n_numberOfFrames - 1))
-            {
-                bool isSpareOrStrike = false;
-                if (game.isFrameAStrike(currFrameIndex))
-                {
-                    isSpareOrStrike = true;
-                }
-                else if (game.isFrameASpare(currFrameIndex))
-                {
-                    isSpareOrStrike = true;
-                }
+        std::cin.clear();
+        cin.ignore(INT_MAX, '\n');
 
-                if (isSpareOrStrike)
+        for (uint16_t currFrameIndex = 0; currFrameIndex < n_numberOfFrames; currFrameIndex++)
+        {
+            for (uint16_t currPlayerIndex = 0; currPlayerIndex < numberOfPlayers; currPlayerIndex++)
+            {
+                uint16_t tryIndex = 0;
+                while (true)
                 {
-                    if (tryIndex == 3)
+                    tryIndex++;
+                    uint16_t numberOfPinsKnockedDown = 0;
+
+                    while (true)
                     {
+                        numberOfPinsKnockedDown = GetNumberAsInput("Enter number of pins knowed down for this try of frame " + std::to_string(currFrameIndex + 1) + " by " + game.GetPlayerName(currPlayerIndex) + " : ");
+
+                        if (game.isValidInput(currPlayerIndex, currFrameIndex, tryIndex, numberOfPinsKnockedDown))
+                            break;
+                        else
+                        {
+                            std::cout << "Invalid inputs ..." << std::endl;
+                        }
+                    }
+                    if (numberOfPinsKnockedDown == n_numberOfPins)
+                    {
+                        game.UpdateFrameScoreAfterATry(currPlayerIndex, currFrameIndex, tryIndex, numberOfPinsKnockedDown);
                         break;
                     }
+                    else
+                    {
+                        game.UpdateFrameScoreAfterATry(currPlayerIndex, currFrameIndex, tryIndex, numberOfPinsKnockedDown);
+                    }
+
+                    if ((currFrameIndex < (n_numberOfFrames - 1)) && (tryIndex == 2))
+                        break;
+                    else if (currFrameIndex == (n_numberOfFrames - 1))
+                    {
+                        bool isSpareOrStrike = false;
+                        if (game.isFrameAStrike(currPlayerIndex, currFrameIndex))
+                        {
+                            isSpareOrStrike = true;
+                        }
+                        else if (game.isFrameASpare(currPlayerIndex, currFrameIndex))
+                        {
+                            isSpareOrStrike = true;
+                        }
+
+                        if (isSpareOrStrike)
+                        {
+                            if (tryIndex == 3)
+                            {
+                                break;
+                            }
+                        }
+                        else if (tryIndex == 2)
+                            break;
+                    }
                 }
-                else if (tryIndex == 2)
-                    break;
             }
         }
+        game.DisplayScore();
     }
-    game.DisplayScore();
+    catch (...)
+    {
+        std::cout << "Unexpected behavior observed..." << std::endl;
+    }
 }
 
 

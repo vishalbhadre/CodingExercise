@@ -1,73 +1,100 @@
 #include "BowlingGame.h"
 
-bool BowlingGame::isFrameAStrike(uint16_t frameNumber)
+void BowlingGame::SetNumberOfPlayers(uint16_t players)
 {
-    return m_frameScore[frameNumber].try1PinsKnockedDown == n_numberOfPins;
+    m_frameScore.reserve(players);
+    for (uint16_t currPlayerIndex = 0; currPlayerIndex < players; currPlayerIndex++)
+    {
+         m_frameScore.emplace_back(std::make_tuple("", std::array<Frame, 10>{}));
+    }
 }
-bool BowlingGame::isFrameASpare(uint16_t frameNumber)
+void BowlingGame::SetPlayerName(uint16_t currPlayerIndex, std::string playerName)
 {
-    return ((m_frameScore[frameNumber].try2PinsKnockedDown.has_value()) && ((m_frameScore[frameNumber].try1PinsKnockedDown +
-        m_frameScore[frameNumber].try2PinsKnockedDown.value()) == n_numberOfPins));
+    std::get<0>(m_frameScore[currPlayerIndex]) = playerName;
 }
-void BowlingGame::UpdateScoreDueToStrikeOrSpare(uint16_t frameNumber, uint16_t numberOfPinsKnockedDown)
+std::string BowlingGame::GetPlayerName(uint16_t currPlayerIndex)
 {
-    m_frameScore[frameNumber - 1].m_score += numberOfPinsKnockedDown;
-    m_frameScore[frameNumber].m_score += numberOfPinsKnockedDown;
+    return std::get<0>(m_frameScore[currPlayerIndex]);
 }
-void BowlingGame::UpdateFrameScoreAfterATry(uint16_t frameNumber, uint16_t tryIndex, uint16_t numberOfPinsKnockedDown)
+bool BowlingGame::isFrameAStrike(uint16_t currPlayerIndex, uint16_t frameNumber)
+{
+    return (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].try1PinsKnockedDown == n_numberOfPins;
+}
+bool BowlingGame::isFrameASpare(uint16_t currPlayerIndex, uint16_t frameNumber)
+{
+    return (((std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].try2PinsKnockedDown.has_value()) && (((std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].try1PinsKnockedDown +
+        (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].try2PinsKnockedDown.value()) == n_numberOfPins));
+}
+void BowlingGame::UpdateScoreDueToStrikeOrSpare(uint16_t currPlayerIndex, uint16_t frameNumber, uint16_t numberOfPinsKnockedDown)
+{
+    (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber - 1].m_score += numberOfPinsKnockedDown;
+    (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].m_score += numberOfPinsKnockedDown;
+}
+void BowlingGame::UpdateFrameScoreAfterATry(uint16_t currPlayerIndex, uint16_t frameNumber, uint16_t tryIndex, uint16_t numberOfPinsKnockedDown)
 {
     if (tryIndex == 1)
     {
-        m_frameScore[frameNumber].try1PinsKnockedDown = numberOfPinsKnockedDown;
-        m_frameScore[frameNumber].m_score = numberOfPinsKnockedDown;
+        (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].try1PinsKnockedDown = numberOfPinsKnockedDown;
+        (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].m_score = numberOfPinsKnockedDown;
         if (frameNumber > 0)
         {
-            m_frameScore[frameNumber].m_score += m_frameScore[frameNumber - 1].m_score;
-            if (isFrameAStrike(frameNumber - 1))
+            (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].m_score += (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber - 1].m_score;
+            if (isFrameAStrike(currPlayerIndex, frameNumber - 1))
             {
-                UpdateScoreDueToStrikeOrSpare(frameNumber, numberOfPinsKnockedDown);
+                UpdateScoreDueToStrikeOrSpare(currPlayerIndex, frameNumber, numberOfPinsKnockedDown);
             }
-            else if (isFrameASpare(frameNumber - 1))
+            else if (isFrameASpare(currPlayerIndex, frameNumber - 1))
             {
-                UpdateScoreDueToStrikeOrSpare(frameNumber, numberOfPinsKnockedDown);
+                UpdateScoreDueToStrikeOrSpare(currPlayerIndex, frameNumber, numberOfPinsKnockedDown);
             }
         }
     }
     else if (tryIndex == 2)
     {
-        m_frameScore[frameNumber].try2PinsKnockedDown = numberOfPinsKnockedDown;
-        m_frameScore[frameNumber].m_score += numberOfPinsKnockedDown;
+        (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].try2PinsKnockedDown = numberOfPinsKnockedDown;
+        (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].m_score += numberOfPinsKnockedDown;
 
         if (frameNumber > 0)
         {
-            if (isFrameAStrike(frameNumber - 1))
+            if (isFrameAStrike(currPlayerIndex, frameNumber - 1))
             {
-                UpdateScoreDueToStrikeOrSpare(frameNumber, numberOfPinsKnockedDown);
+                UpdateScoreDueToStrikeOrSpare(currPlayerIndex, frameNumber, numberOfPinsKnockedDown);
             }
         }
     }
     else if (tryIndex == 3)
     {
-        m_frameScore[frameNumber].try3PinsKnockedDown = numberOfPinsKnockedDown;
-        m_frameScore[frameNumber].m_score += numberOfPinsKnockedDown;
+        (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].try3PinsKnockedDown = numberOfPinsKnockedDown;
+        (std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].m_score += numberOfPinsKnockedDown;
     }
 }
-bool BowlingGame::isValidInput(uint16_t frameNumber, uint16_t tryIndex, uint16_t numberOfPinsKnockedDown)
+bool BowlingGame::isValidInput(uint16_t currPlayerIndex, uint16_t frameNumber, uint16_t tryIndex, uint16_t numberOfPinsKnockedDown)
 {
     bool isValidInput = true;
     if (frameNumber <= (n_numberOfFrames - 1))
     {
         if (numberOfPinsKnockedDown > n_numberOfFrames)
             isValidInput = false;
-        else if ((tryIndex == 2) && ((m_frameScore[frameNumber].try1PinsKnockedDown + numberOfPinsKnockedDown) > n_numberOfFrames))
+        else if ((tryIndex == 2) && (((std::get<1>(m_frameScore[currPlayerIndex]))[frameNumber].try1PinsKnockedDown + numberOfPinsKnockedDown) > n_numberOfFrames))
             isValidInput = false;
     }
     return isValidInput;
 }
 void BowlingGame::DisplayScore()
 {
-    for (auto& fScore : m_frameScore)
+    for (uint16_t currPlayerIndex = 0; currPlayerIndex < m_frameScore.size(); currPlayerIndex++)
     {
-        std::cout << "Frame Score : " << fScore.m_score << std::endl;
+        std::cout << "Player Name : " << GetPlayerName(currPlayerIndex) << std::endl;
+        for (auto& fScore : (std::get<1>(m_frameScore[currPlayerIndex])))
+        {
+            std::cout << "\tFrame Score : " << fScore.m_score << std::endl;
+        }
+    }
+}
+void BowlingGame::DisplayPlayers()
+{
+    for (auto& player : m_frameScore)
+    {
+        std::cout << "player name : " << std::get<0>(player) << std::endl;
     }
 }
